@@ -5,6 +5,8 @@ const regd_users = express.Router();
 
 let users = [];
 
+// Use token to authenticate user
+
 const isValid = (username)=>{ //returns boolean
 //write code to check is the username is valid
 }
