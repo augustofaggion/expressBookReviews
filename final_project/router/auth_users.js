@@ -4,8 +4,6 @@ let books = require("./booksdb.js");
 const regd_users = express.Router();
 
 let users = [
-  { username: "user1", password: "password1" },
-  { username: "user2", password: "password2" }
 ];
 
 // Use token to authenticate user
@@ -28,28 +26,34 @@ regd_users.post("/login", (req,res) => {
   }
 
   if (authenticatedUser(username,password)){
-    const token = jwt.sign({username: username}, "fingerprint_customer");
-    return res.status(200).json({token:token});
+    const token = jwt.sign({username: username}, "fingerprint_customer", { expiresIn: '1h' });
+    return res.status(200).json({message: "Login successful",token:token});
   } else {
     return res.status(401).json({message: "Invalid username or password"});
   }
 });
 
-// Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
- const isbn = req.params.isbn;
- const review = req.body.review;
+  const isbn = req.params.isbn;  // Get the book's ISBN from the URL
+  const { review } = req.body;   // Get the new review content from the request body
+  const username = req.session.username;  // Get the username from the session (assuming authentication)
 
- if(!isbn || !review){
-   return res.status(400).json({message: "Invalid request"});
- }
-
- if (books[isbn]){
-   books[isbn].reviews.push({user: req.user.username, review});
-   return res.status(200).json({message: "Review added successfully"});
- } else {
-   return res.status(404).json({message: "Book not found"});
- }
+  // Check if the book exists
+  if (books[isbn]) {
+      // Check if the user already has a review for this book
+      if (books[isbn].reviews[username]) {
+          // Update the review
+          books[isbn].reviews[username] = review;
+          return res.status(200).json({ message: "Review updated successfully." });
+      } else {
+          // If no existing review, add a new review
+          books[isbn].reviews[username] = review;
+          return res.status(200).json({ message: "Review added successfully." });
+      }
+  } else {
+      // If the book with the given ISBN is not found
+      return res.status(404).json({ message: "Book not found." });
+  }
 });
 
 module.exports.authenticated = regd_users;
